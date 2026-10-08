@@ -1,0 +1,106 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Configura la conexión y los modos compatibles con CoolMasterNet.",
+        "data": {
+          "host": "Servidor",
+          "off": "Permitir apagar",
+          "heat": "Modo calor",
+          "cool": "Modo frío",
+          "heat_cool": "Modo automático frío/calor",
+          "dry": "Modo deshumidificación",
+          "fan_only": "Modo ventilador",
+          "swing_support": "Control de oscilación"
+        },
+        "data_description": {
+          "host": "Nombre o dirección IP del puente CoolMasterNet."
+        },
+        "sections": {
+          "more_options": {
+            "name": "Más opciones",
+            "data": {
+              "send_wakeup_prompt": "Enviar comando inicial de activación"
+            },
+            "data_description": {
+              "send_wakeup_prompt": "Envía una línea vacía antes del comando. Necesario para modelos serie."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "description": "Configura la conexión y los modos compatibles con CoolMasterNet.",
+        "data": {
+          "host": "Servidor",
+          "off": "Permitir apagar",
+          "heat": "Modo calor",
+          "cool": "Modo frío",
+          "heat_cool": "Modo automático frío/calor",
+          "dry": "Modo deshumidificación",
+          "fan_only": "Modo ventilador",
+          "swing_support": "Control de oscilación"
+        },
+        "data_description": {
+          "host": "Nombre o dirección IP del puente CoolMasterNet."
+        },
+        "sections": {
+          "more_options": {
+            "name": "Más opciones",
+            "data": {
+              "send_wakeup_prompt": "Enviar comando inicial de activación"
+            },
+            "data_description": {
+              "send_wakeup_prompt": "Envía una línea vacía antes del comando. Necesario para modelos serie."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No se puede conectar con CoolMasterNet.",
+      "no_units": "No se han encontrado unidades de climatización."
+    },
+    "abort": {
+      "already_configured": "Este servidor ya está configurado.",
+      "reconfigure_successful": "Configuración actualizada."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "clean_filter": {
+        "name": "Limpiar filtro"
+      },
+      "demand": {
+        "name": "Demanda VRV"
+      }
+    },
+    "button": {
+      "reset_filter": {
+        "name": "Reiniciar filtro"
+      },
+      "lock_on": {
+        "name": "Bloqueo on/off activar"
+      },
+      "unlock_on": {
+        "name": "Bloqueo on/off desactivar"
+      },
+      "lock_temp": {
+        "name": "Bloqueo temp. activar"
+      },
+      "unlock_temp": {
+        "name": "Bloqueo temp. desactivar"
+      },
+      "lock_mode": {
+        "name": "Bloqueo modo activar"
+      },
+      "unlock_mode": {
+        "name": "Bloqueo modo desactivar"
+      }
+    },
+    "sensor": {
+      "error_code": {
+        "name": "Código de error"
+      }
+    }
+  }
+}
