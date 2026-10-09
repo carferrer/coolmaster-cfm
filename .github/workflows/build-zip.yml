@@ -1,0 +1,23 @@
+name: Build ZIP for HACS
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Create ZIP
+        run: |
+          cd custom_components/coolmaster
+          zip -r ../../coolmaster.zip .
+      - name: Upload ZIP to release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: coolmaster.zip

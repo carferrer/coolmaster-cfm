@@ -78,6 +78,14 @@ Las pruebas usan las clases reales de Home Assistant 2026.9.2 con comunicación
 simulada. La biblioteca tiene pruebas de protocolo con un servidor TCP local.
 La validación con un puente físico y una instalación completa de HA queda pendiente.
 
+## Verificaciones y releases
+
+En cada push y pull request se ejecutan las pruebas con Home Assistant 2026.9.2,
+Ruff, Hassfest y la validación de HACS. Hassfest y HACS también se ejecutan cada
+día. Al publicar una release, GitHub Actions adjunta `coolmaster.zip` con el
+contenido de `custom_components/coolmaster` en la raíz del ZIP. HACS utiliza
+ese archivo para instalar la integración; no es necesario empaquetarlo a mano.
+
 ## Procedencia
 
 Base de integración: [Home Assistant Core 2026.9.2](https://github.com/home-assistant/core/tree/2026.9.2/homeassistant/components/coolmaster), Apache-2.0.
