@@ -85,6 +85,7 @@ Ruff, Hassfest y la validación de HACS. Hassfest y HACS también se ejecutan ca
 día. Al publicar una release, GitHub Actions adjunta `coolmaster.zip` con el
 contenido de `custom_components/coolmaster` en la raíz del ZIP. HACS utiliza
 ese archivo para instalar la integración; no es necesario empaquetarlo a mano.
+El icono local procede del [favicon oficial de CoolAutomation](https://coolautomation.com/favicon.png).
 
 ## Procedencia
 
