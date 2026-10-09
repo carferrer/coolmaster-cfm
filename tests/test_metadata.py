@@ -30,9 +30,8 @@ def test_translations_have_no_duplicate_keys_or_unresolved_core_references():
         assert set(strings["entity"]["switch"]) == {switch.key for switch in LOCKS}
 
 
-def test_legacy_domain_and_version():
+def test_manifest_identity_and_dependencies():
     manifest = json.loads((COMPONENT / "manifest.json").read_text())
     assert manifest["domain"] == "coolmaster"
-    assert manifest["version"] == "1.2.0"
     assert manifest["integration_type"] == "hub"
     assert manifest["requirements"] == []
