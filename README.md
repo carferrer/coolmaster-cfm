@@ -16,10 +16,10 @@ biblioteca de protocolo actualizada desde `pycoolmasternet-async` v0.2.6.
 No borres ni vuelvas a crear la integración: se mantienen el dominio `coolmaster`,
 la versión de configuración 1 y los identificadores de dispositivos. El botón
 de filtro mantiene su `unique_id`. Los seis botones de bloqueo se reemplazan por
-tres entidades `switch` (`lock_on`, `lock_temp`, `lock_mode`). Los botones antiguos
-pueden quedar como entradas huérfanas en el registro de entidades de Home
-Assistant; tras reiniciar, se pueden eliminar allí y actualizar las
-automatizaciones que los usaban.
+tres entidades `switch` (`lock_on`, `lock_temp`, `lock_mode`). Al iniciar esta
+versión, la integración elimina del registro los seis botones antiguos de cada
+unidad de esta entrada. No elimina el botón de filtro ni los interruptores
+nuevos. Actualiza las automatizaciones que usaban los botones de bloqueo.
 
 ## Máquinas Daikin con dos velocidades
 
