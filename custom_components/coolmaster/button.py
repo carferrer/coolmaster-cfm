@@ -1,4 +1,4 @@
-"""Buttons for filter maintenance and remote-controller locks."""
+"""Button for filter maintenance."""
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -29,48 +29,6 @@ BUTTONS = (
         entity_category=EntityCategory.CONFIG,
         press=CoolMasterNetUnit.reset_filter,
     ),
-    CoolmasterButtonDescription(
-        key="lock_on",
-        translation_key="lock_on",
-        entity_category=EntityCategory.CONFIG,
-        icon="mdi:shield-lock-outline",
-        press=CoolMasterNetUnit.lockon,
-    ),
-    CoolmasterButtonDescription(
-        key="unlock_on",
-        translation_key="unlock_on",
-        entity_category=EntityCategory.CONFIG,
-        icon="mdi:shield-lock-open-outline",
-        press=CoolMasterNetUnit.unlockon,
-    ),
-    CoolmasterButtonDescription(
-        key="lock_temp",
-        translation_key="lock_temp",
-        entity_category=EntityCategory.CONFIG,
-        icon="mdi:shield-lock-outline",
-        press=CoolMasterNetUnit.locktemp,
-    ),
-    CoolmasterButtonDescription(
-        key="unlock_temp",
-        translation_key="unlock_temp",
-        entity_category=EntityCategory.CONFIG,
-        icon="mdi:shield-lock-open-outline",
-        press=CoolMasterNetUnit.unlocktemp,
-    ),
-    CoolmasterButtonDescription(
-        key="lock_mode",
-        translation_key="lock_mode",
-        entity_category=EntityCategory.CONFIG,
-        icon="mdi:shield-lock-outline",
-        press=CoolMasterNetUnit.lockmode,
-    ),
-    CoolmasterButtonDescription(
-        key="unlock_mode",
-        translation_key="unlock_mode",
-        entity_category=EntityCategory.CONFIG,
-        icon="mdi:shield-lock-open-outline",
-        press=CoolMasterNetUnit.unlockmode,
-    ),
 )
 
 
@@ -79,7 +37,7 @@ async def async_setup_entry(
     config_entry: CoolmasterConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up buttons with the existing unique IDs."""
+    """Set up filter maintenance buttons."""
     coordinator = config_entry.runtime_data
     async_add_entities(
         CoolmasterButton(coordinator, unit_id, description)

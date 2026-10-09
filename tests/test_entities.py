@@ -23,6 +23,7 @@ from custom_components.coolmaster.climate import (
 )
 from custom_components.coolmaster.entity import CoolmasterEntity
 from custom_components.coolmaster.sensor import CoolmasterCleanFilter as ErrorSensor
+from custom_components.coolmaster.switch import LOCKS, CoolmasterLock
 
 
 def make_unit(raw="L1.001 ON 23.0C 24.0C Med Cool OK - 1"):
@@ -45,15 +46,7 @@ def coordinator():
 
 @pytest.mark.parametrize(
     "key,command",
-    [
-        ("reset_filter", "filt L1.001"),
-        ("lock_on", "lock L1.001 +o"),
-        ("unlock_on", "lock L1.001 -o"),
-        ("lock_temp", "lock L1.001 +t"),
-        ("unlock_temp", "lock L1.001 -t"),
-        ("lock_mode", "lock L1.001 +m"),
-        ("unlock_mode", "lock L1.001 -m"),
-    ],
+    [("reset_filter", "filt L1.001")],
 )
 async def test_buttons_preserve_ids_and_publish_single_refresh(
     coordinator, key, command
@@ -76,9 +69,46 @@ async def test_button_error_is_actionable(coordinator):
     unit._bridge._make_request.side_effect = CoolMasterNetCommandError(
         "unsupported lock"
     )
-    entity = CoolmasterButton(coordinator, "L1.001", BUTTONS[1])
+    entity = CoolmasterButton(coordinator, "L1.001", BUTTONS[0])
     with pytest.raises(HomeAssistantError, match="unsupported lock"):
         await entity.async_press()
+    coordinator.async_set_unit_data.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "key,flag", [("lock_on", "o"), ("lock_temp", "t"), ("lock_mode", "m")]
+)
+@pytest.mark.parametrize("enabled", [True, False])
+async def test_lock_switch_reads_back_after_command(coordinator, key, flag, enabled):
+    description = next(d for d in LOCKS if d.key == key)
+    unit = coordinator.data["L1.001"]
+    updated = make_unit()
+    updated._locks[flag] = enabled
+    unit.refresh = AsyncMock(return_value=updated)
+    entity = CoolmasterLock(coordinator, "L1.001", description)
+    entity.async_write_ha_state = MagicMock()
+    assert entity.unique_id == f"L1.001-{key}"
+    assert not entity.available
+    if enabled:
+        await entity.async_turn_on()
+    else:
+        await entity.async_turn_off()
+    unit._bridge._make_request.assert_awaited_once_with(
+        f"lock L1.001 {'+' if enabled else '-'}{flag}"
+    )
+    coordinator.async_set_unit_data.assert_called_once_with(updated)
+    coordinator.data["L1.001"] = updated
+    entity._handle_coordinator_update()
+    assert entity.available
+    assert entity.is_on is enabled
+
+
+async def test_lock_switch_error_preserves_state(coordinator):
+    unit = coordinator.data["L1.001"]
+    unit._bridge._make_request.side_effect = CoolMasterNetCommandError("unsupported")
+    entity = CoolmasterLock(coordinator, "L1.001", LOCKS[0])
+    with pytest.raises(HomeAssistantError, match="unsupported"):
+        await entity.async_turn_on()
     coordinator.async_set_unit_data.assert_not_called()
 
 

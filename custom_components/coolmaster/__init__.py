@@ -1,15 +1,37 @@
 """The Coolmaster integration."""
 
+import logging
+
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 
 from ._vendor import CoolMasterNet
 from .const import CONF_SEND_WAKEUP_PROMPT, CONF_SWING_SUPPORT, DOMAIN
 from .coordinator import CoolmasterConfigEntry, CoolmasterDataUpdateCoordinator
 
-PLATFORMS = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.CLIMATE, Platform.SENSOR]
+_LOGGER = logging.getLogger(__name__)
+
+_LEGACY_LOCK_BUTTON_KEYS = frozenset(
+    {
+        "lock_on",
+        "unlock_on",
+        "lock_temp",
+        "unlock_temp",
+        "lock_mode",
+        "unlock_mode",
+    }
+)
+
+PLATFORMS = [
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.CLIMATE,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: CoolmasterConfigEntry) -> bool:
@@ -44,8 +66,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: CoolmasterConfigEntry) -
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    _remove_legacy_lock_buttons(hass, entry)
 
     return True
+
+
+def _remove_legacy_lock_buttons(
+    hass: HomeAssistant, entry: CoolmasterConfigEntry
+) -> None:
+    """Remove only obsolete lock buttons owned by this config entry."""
+    registry = er.async_get(hass)
+    removed = 0
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity.domain != Platform.BUTTON or entity.platform != DOMAIN:
+            continue
+        if not any(
+            entity.unique_id.endswith(f"-{key}") for key in _LEGACY_LOCK_BUTTON_KEYS
+        ):
+            continue
+        registry.async_remove(entity.entity_id)
+        removed += 1
+    if removed:
+        _LOGGER.info("Removed %d obsolete CoolMasterNet lock buttons", removed)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: CoolmasterConfigEntry) -> bool:
