@@ -11,10 +11,12 @@
           "heat_cool": "Modo automático frío/calor",
           "dry": "Modo deshumidificación",
           "fan_only": "Modo ventilador",
-          "swing_support": "Control de oscilación"
+          "swing_support": "Control de oscilación",
+          "fan_modes": "Velocidades de ventilador disponibles"
         },
         "data_description": {
-          "host": "Nombre o dirección IP del puente CoolMasterNet."
+          "host": "Nombre o dirección IP del puente CoolMasterNet.",
+          "fan_modes": "Selecciona solo las velocidades compatibles con todas las unidades de este puente."
         },
         "sections": {
           "more_options": {
@@ -38,10 +40,12 @@
           "heat_cool": "Modo automático frío/calor",
           "dry": "Modo deshumidificación",
           "fan_only": "Modo ventilador",
-          "swing_support": "Control de oscilación"
+          "swing_support": "Control de oscilación",
+          "fan_modes": "Velocidades de ventilador disponibles"
         },
         "data_description": {
-          "host": "Nombre o dirección IP del puente CoolMasterNet."
+          "host": "Nombre o dirección IP del puente CoolMasterNet.",
+          "fan_modes": "Selecciona solo las velocidades compatibles con todas las unidades de este puente."
         },
         "sections": {
           "more_options": {
@@ -100,6 +104,16 @@
     "sensor": {
       "error_code": {
         "name": "Código de error"
+      }
+    }
+  },
+  "selector": {
+    "fan_modes": {
+      "options": {
+        "low": "Baja",
+        "med": "Media",
+        "high": "Alta",
+        "auto": "Automática"
       }
     }
   }

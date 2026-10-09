@@ -11,10 +11,12 @@
           "heat_cool": "Support automatic heat/cool mode",
           "dry": "Support dry mode",
           "fan_only": "Support fan only mode",
-          "swing_support": "Control swing mode"
+          "swing_support": "Control swing mode",
+          "fan_modes": "Fan speeds available on your units"
         },
         "data_description": {
-          "host": "Hostname or IP address of your CoolMasterNet bridge."
+          "host": "Hostname or IP address of your CoolMasterNet bridge.",
+          "fan_modes": "Select only speeds supported by every unit on this bridge."
         },
         "sections": {
           "more_options": {
@@ -38,10 +40,12 @@
           "heat_cool": "Support automatic heat/cool mode",
           "dry": "Support dry mode",
           "fan_only": "Support fan only mode",
-          "swing_support": "Control swing mode"
+          "swing_support": "Control swing mode",
+          "fan_modes": "Fan speeds available on your units"
         },
         "data_description": {
-          "host": "Hostname or IP address of your CoolMasterNet bridge."
+          "host": "Hostname or IP address of your CoolMasterNet bridge.",
+          "fan_modes": "Select only speeds supported by every unit on this bridge."
         },
         "sections": {
           "more_options": {
@@ -100,6 +104,16 @@
     "sensor": {
       "error_code": {
         "name": "Error code"
+      }
+    }
+  },
+  "selector": {
+    "fan_modes": {
+      "options": {
+        "low": "Low",
+        "med": "Medium",
+        "high": "High",
+        "auto": "Auto"
       }
     }
   }

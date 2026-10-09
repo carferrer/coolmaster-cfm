@@ -43,6 +43,29 @@ async def test_new_config_and_wakeup_option(flow):
     assert result["type"] == "create_entry"
     assert result["data"]["supported_modes"] == ["off", "heat", "cool", "fan_only"]
     assert result["data"]["send_wakeup_prompt"] is True
+    assert result["data"]["fan_modes"] == ["low", "med", "high", "auto"]
+
+
+async def test_new_config_can_limit_fan_to_daikin_speeds(flow):
+    data = user_data() | {"fan_modes": ["low", "high"]}
+    bridge = MagicMock(status=AsyncMock(return_value={"L1.001": object()}))
+    with patch(
+        "custom_components.coolmaster.config_flow.CoolMasterNet", return_value=bridge
+    ):
+        result = await flow.async_step_user(data)
+    assert result["data"]["fan_modes"] == ["low", "high"]
+
+
+def test_fan_selector_rejects_empty_and_unknown_modes():
+    import voluptuous as vol
+
+    from custom_components.coolmaster.config_flow import DATA_SCHEMA
+
+    data = user_data()
+    assert DATA_SCHEMA(data)["fan_modes"] == ["low", "med", "high", "auto"]
+    for value in ([], ["turbo"]):
+        with pytest.raises(vol.Invalid):
+            DATA_SCHEMA(data | {"fan_modes": value})
 
 
 @pytest.mark.parametrize(
@@ -83,6 +106,12 @@ async def test_reconfigure_legacy_entry_keeps_port_and_same_entry(flow):
     flow.hass.config_entries.async_get_known_entry.return_value = entry
     form = await flow.async_step_reconfigure()
     assert form["step_id"] == "reconfigure"
+    assert form["data_schema"](user_data())["fan_modes"] == [
+        "low",
+        "med",
+        "high",
+        "auto",
+    ]
     flow.async_update_reload_and_abort = MagicMock(return_value={"type": "abort"})
     bridge = MagicMock(status=AsyncMock(return_value={"L1.001": object()}))
     with patch(
@@ -99,6 +128,28 @@ async def test_reconfigure_legacy_entry_keeps_port_and_same_entry(flow):
         "cool",
         "fan_only",
     ]
+    assert kwargs["data_updates"]["fan_modes"] == ["low", "med", "high", "auto"]
+
+
+async def test_reconfigure_daikin_fan_modes_without_changing_port(flow):
+    entry = SimpleNamespace(
+        entry_id="existing",
+        data={"host": "bridge", "port": 10200, "supported_modes": ["cool"]},
+        options={},
+    )
+    flow.context = {"source": "reconfigure", "entry_id": entry.entry_id}
+    flow._async_current_entries.return_value = [entry]
+    flow.hass.config_entries.async_get_known_entry.return_value = entry
+    flow.async_update_reload_and_abort = MagicMock(return_value={"type": "abort"})
+    bridge = MagicMock(status=AsyncMock(return_value={"L1.001": object()}))
+    data = user_data() | {"fan_modes": ["low", "high"]}
+    with patch(
+        "custom_components.coolmaster.config_flow.CoolMasterNet", return_value=bridge
+    ):
+        await flow.async_step_reconfigure(data)
+    assert flow.async_update_reload_and_abort.call_args.kwargs["data_updates"][
+        "fan_modes"
+    ] == ["low", "high"]
 
 
 async def test_reconfigure_cannot_take_another_entries_host(flow):

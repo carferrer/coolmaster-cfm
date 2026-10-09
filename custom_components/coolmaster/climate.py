@@ -17,7 +17,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from ._vendor import SWING_MODES
-from .const import CONF_SUPPORTED_MODES
+from .const import CONF_FAN_MODES, CONF_SUPPORTED_MODES, DEFAULT_FAN_MODES
 from .coordinator import CoolmasterConfigEntry, CoolmasterDataUpdateCoordinator
 from .entity import CoolmasterEntity
 
@@ -41,8 +41,6 @@ CM_TO_HA_FAN = {
 
 HA_FAN_TO_CM = {value: key for key, value in CM_TO_HA_FAN.items()}
 
-FAN_MODES = list(CM_TO_HA_FAN.values())
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -54,9 +52,13 @@ async def async_setup_entry(
     """Set up the CoolMasterNet climate platform."""
     coordinator = config_entry.runtime_data
     supported_modes: list[str] = config_entry.data[CONF_SUPPORTED_MODES]
+    fan_modes: list[str] = config_entry.data.get(CONF_FAN_MODES, DEFAULT_FAN_MODES)
     async_add_entities(
         CoolmasterClimate(
-            coordinator, unit_id, [HVACMode(mode) for mode in supported_modes]
+            coordinator,
+            unit_id,
+            [HVACMode(mode) for mode in supported_modes],
+            fan_modes,
         )
         for unit_id in coordinator.data
     )
@@ -75,10 +77,14 @@ class CoolmasterClimate(CoolmasterEntity, ClimateEntity):
         coordinator: CoolmasterDataUpdateCoordinator,
         unit_id: str,
         supported_modes: list[HVACMode],
+        fan_modes: list[str] | None = None,
     ) -> None:
         """Initialize the climate device."""
         super().__init__(coordinator, unit_id)
         self._attr_hvac_modes = supported_modes
+        self._fan_modes = list(
+            fan_modes if fan_modes is not None else DEFAULT_FAN_MODES
+        )
         self._attr_unique_id = unit_id
 
     @property
@@ -148,7 +154,7 @@ class CoolmasterClimate(CoolmasterEntity, ClimateEntity):
     @override
     def fan_modes(self) -> list[str]:
         """Return the list of available fan modes."""
-        return FAN_MODES
+        return self._fan_modes
 
     @property
     @override

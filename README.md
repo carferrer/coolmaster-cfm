@@ -2,7 +2,7 @@
 
 Integración personalizada para **Home Assistant 2026.9.2 o posterior**. Conserva
 la demanda VRV y los seis botones de bloqueo de la versión CFM 1.0.5.
-La versión 1.1.0 se basa en la integración oficial de HA 2026.9.2, con la
+La versión 1.1.1 se basa en la integración oficial de HA 2026.9.2, con la
 biblioteca de protocolo actualizada desde `pycoolmasternet-async` v0.2.6.
 
 ## Actualizar desde 1.0.5
@@ -19,6 +19,19 @@ la versión de configuración 1, los identificadores de dispositivos y los
 `unlock_temp`, `lock_mode` y `unlock_mode`. Los nombres personalizados permanecen
 en el registro de entidades existente.
 
+## Máquinas Daikin con dos velocidades
+
+Después de instalar, abre **Ajustes → Dispositivos y servicios → CoolMasterNet →
+Reconfigurar**. En **Velocidades de ventilador disponibles**, deja marcadas solo
+**Baja (`low`)** y **Alta (`high`)** y guarda. Home Assistant mostrará únicamente
+esas dos opciones en todas las unidades de este puente. No hay que crear otra
+integración ni cambiar los identificadores de las entidades.
+
+Una entrada ya configurada sigue mostrando `low`, `med`, `high` y `auto` hasta que
+se reconfigure. Así se conservan las automatizaciones existentes. La selección
+se aplica a todo el puente; usa `low` y `high` cuando todas sus unidades los
+soportan, como en esta instalación.
+
 Se conserva **`med`** como velocidad pública del ventilador para no romper
 automatizaciones existentes. Esta es una diferencia deliberada respecto a la
 normalización a `medium` del componente oficial.
@@ -32,6 +45,7 @@ Su procedencia y las adaptaciones están documentadas en `_vendor/README.md`.
 ## Cambios
 
 - Reconfiguración de conexión y modos desde la interfaz; conserva el puerto existente.
+- Selección de velocidades del ventilador desde la reconfiguración.
 - Prevención de entradas duplicadas por host y opción de activación para modelos serie.
 - Tres intentos de lectura, con esperas de 2 y 4 segundos y sin espera tras el último fallo.
 - Demanda mediante la propiedad pública; estado desconocido si el formato no la incluye.

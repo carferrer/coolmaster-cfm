@@ -8,13 +8,16 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import SectionConfig, section
+from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from ._vendor import CoolMasterNet
 from .const import (
+    CONF_FAN_MODES,
     CONF_MORE_OPTIONS,
     CONF_SEND_WAKEUP_PROMPT,
     CONF_SUPPORTED_MODES,
     CONF_SWING_SUPPORT,
+    DEFAULT_FAN_MODES,
     DEFAULT_PORT,
     DOMAIN,
 )
@@ -35,6 +38,16 @@ DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST): str,
         **MODES_SCHEMA,
         vol.Required(CONF_SWING_SUPPORT, default=False): bool,
+        vol.Required(CONF_FAN_MODES, default=lambda: list(DEFAULT_FAN_MODES)): vol.All(
+            SelectSelector(
+                SelectSelectorConfig(
+                    options=list(DEFAULT_FAN_MODES),
+                    multiple=True,
+                    translation_key=CONF_FAN_MODES,
+                )
+            ),
+            vol.Length(min=1),
+        ),
         vol.Required(CONF_MORE_OPTIONS): section(
             vol.Schema(
                 {
@@ -70,6 +83,7 @@ class CoolmasterConfigFlow(ConfigFlow, domain=DOMAIN):
                     mode for mode in AVAILABLE_MODES if data.get(mode)
                 ],
                 CONF_SWING_SUPPORT: data[CONF_SWING_SUPPORT],
+                CONF_FAN_MODES: list(data.get(CONF_FAN_MODES, DEFAULT_FAN_MODES)),
                 CONF_SEND_WAKEUP_PROMPT: more_options.get(
                     CONF_SEND_WAKEUP_PROMPT, False
                 ),
@@ -138,6 +152,9 @@ class CoolmasterConfigFlow(ConfigFlow, domain=DOMAIN):
                             mode for mode in AVAILABLE_MODES if user_input.get(mode)
                         ],
                         CONF_SWING_SUPPORT: user_input[CONF_SWING_SUPPORT],
+                        CONF_FAN_MODES: list(
+                            user_input.get(CONF_FAN_MODES, DEFAULT_FAN_MODES)
+                        ),
                         CONF_SEND_WAKEUP_PROMPT: more_options.get(
                             CONF_SEND_WAKEUP_PROMPT, False
                         ),
@@ -154,6 +171,9 @@ class CoolmasterConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_HOST: entry_data[CONF_HOST],
                     **{mode: mode in supported_modes for mode in AVAILABLE_MODES},
                     CONF_SWING_SUPPORT: entry_data.get(CONF_SWING_SUPPORT, False),
+                    CONF_FAN_MODES: list(
+                        entry_data.get(CONF_FAN_MODES, DEFAULT_FAN_MODES)
+                    ),
                     CONF_MORE_OPTIONS: {
                         CONF_SEND_WAKEUP_PROMPT: entry_data.get(
                             CONF_SEND_WAKEUP_PROMPT, False

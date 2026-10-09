@@ -18,6 +18,9 @@ from custom_components.coolmaster.binary_sensor import (
 )
 from custom_components.coolmaster.button import BUTTONS, CoolmasterButton
 from custom_components.coolmaster.climate import CoolmasterClimate
+from custom_components.coolmaster.climate import (
+    async_setup_entry as setup_climate_entry,
+)
 from custom_components.coolmaster.entity import CoolmasterEntity
 from custom_components.coolmaster.sensor import CoolmasterCleanFilter as ErrorSensor
 
@@ -102,6 +105,28 @@ def test_existing_entity_and_device_identifiers(coordinator):
         CoolmasterCleanFilter(coordinator, "L1.001").unique_id == "L1.001-clean_filter"
     )
     assert ErrorSensor(coordinator, "L1.001").unique_id == "L1.001-error_code"
+
+
+def test_daikin_fan_modes_only_show_low_and_high(coordinator):
+    entity = CoolmasterClimate(coordinator, "L1.001", [HVACMode.COOL], ["low", "high"])
+    assert entity.fan_modes == ["low", "high"]
+    assert entity.unique_id == "L1.001"
+
+
+@pytest.mark.parametrize(
+    "stored,expected",
+    [(["low", "high"], ["low", "high"]), (None, ["low", "med", "high", "auto"])],
+)
+async def test_fan_mode_choice_is_applied_to_every_unit(coordinator, stored, expected):
+    coordinator.data["L1.002"] = make_unit()
+    config_data = {"supported_modes": ["cool"]}
+    if stored is not None:
+        config_data["fan_modes"] = stored
+    entry = SimpleNamespace(runtime_data=coordinator, data=config_data)
+    entities = []
+    await setup_climate_entry(MagicMock(), entry, entities.extend)
+    assert [entity.unique_id for entity in entities] == ["L1.001", "L1.002"]
+    assert all(entity.fan_modes == expected for entity in entities)
 
 
 async def test_medium_fan_mode_maps_to_wire_protocol(coordinator):

@@ -31,6 +31,6 @@ def test_translations_have_no_duplicate_keys_or_unresolved_core_references():
 def test_legacy_domain_and_version():
     manifest = json.loads((COMPONENT / "manifest.json").read_text())
     assert manifest["domain"] == "coolmaster"
-    assert manifest["version"] == "1.1.0"
+    assert manifest["version"] == "1.1.1"
     assert manifest["integration_type"] == "hub"
     assert manifest["requirements"] == []
