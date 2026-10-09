@@ -1,11 +1,13 @@
 """Base entity for Coolmaster integration."""
 
+from typing import override
+
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import CoolmasterDataUpdateCoordinator
 from .const import DOMAIN
+from .coordinator import CoolmasterDataUpdateCoordinator
 
 
 class CoolmasterEntity(CoordinatorEntity[CoolmasterDataUpdateCoordinator]):
@@ -27,12 +29,20 @@ class CoolmasterEntity(CoordinatorEntity[CoolmasterDataUpdateCoordinator]):
             manufacturer="CoolAutomation",
             model="CoolMasterNet",
             name=unit_id,
-            sw_version=coordinator.info["version"],
+            sw_version=coordinator.info.get("version"),
         )
         if hasattr(self, "entity_description"):
             self._attr_unique_id: str = f"{unit_id}-{self.entity_description.key}"
 
     @callback
+    @override
     def _handle_coordinator_update(self) -> None:
-        self._unit = self.coordinator.data[self._unit_id]
+        if self._unit_id in self.coordinator.data:
+            self._unit = self.coordinator.data[self._unit_id]
         super()._handle_coordinator_update()
+
+    @property
+    @override
+    def available(self) -> bool:
+        """A disappeared unit must not keep advertising its previous state."""
+        return super().available and self._unit_id in self.coordinator.data

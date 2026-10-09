@@ -1,6 +1,6 @@
 """Binary Sensor platform for CoolMasterNet integration."""
 
-from __future__ import annotations
+from typing import override
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -9,7 +9,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import CoolmasterConfigEntry
 from .entity import CoolmasterEntity
@@ -18,7 +18,7 @@ from .entity import CoolmasterEntity
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: CoolmasterConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the CoolMasterNet binary_sensor platform."""
     coordinator = config_entry.runtime_data
@@ -41,24 +41,24 @@ class CoolmasterCleanFilter(CoolmasterEntity, BinarySensorEntity):
     )
 
     @property
+    @override
     def is_on(self) -> bool | None:
         """Return true if the binary sensor is on."""
         return self._unit.clean_filter
 
 
 class CoolmasterDemand(CoolmasterEntity, BinarySensorEntity):
-    """Representation of a unit's filter state (true means need to be cleaned)."""
+    """Report demand separately from the unit's on/off state."""
 
     entity_description = BinarySensorEntityDescription(
         key="demand",
         translation_key="demand",
         device_class=BinarySensorDeviceClass.RUNNING,
-        #entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:engine",
-		name="Demanda VRV",
     )
 
     @property
+    @override
     def is_on(self) -> bool | None:
-        """Return true if the binary sensor is on."""
-        return self._unit._demand
+        """Return unknown when the bridge does not report demand."""
+        return self._unit.demand

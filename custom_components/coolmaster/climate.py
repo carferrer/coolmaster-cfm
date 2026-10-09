@@ -1,13 +1,12 @@
 """CoolMasterNet platform to control of CoolMasterNet Climate Devices."""
 
-from __future__ import annotations
-
 import logging
-from typing import Any
-
-from pycoolmasternet_async import SWING_MODES
+from typing import Any, override
 
 from homeassistant.components.climate import (
+    FAN_AUTO,
+    FAN_HIGH,
+    FAN_LOW,
     ClimateEntity,
     ClimateEntityFeature,
     HVACMode,
@@ -15,9 +14,10 @@ from homeassistant.components.climate import (
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_SUPPORTED_MODES
+from ._vendor import SWING_MODES
+from .const import CONF_FAN_MODES, CONF_SUPPORTED_MODES, DEFAULT_FAN_MODES
 from .coordinator import CoolmasterConfigEntry, CoolmasterDataUpdateCoordinator
 from .entity import CoolmasterEntity
 
@@ -31,7 +31,15 @@ CM_TO_HA_STATE = {
 
 HA_STATE_TO_CM = {value: key for key, value in CM_TO_HA_STATE.items()}
 
-FAN_MODES = ["low", "med", "high", "auto"]
+CM_TO_HA_FAN = {
+    "low": FAN_LOW,
+    # Keep the original public value so existing automations still match.
+    "med": "med",
+    "high": FAN_HIGH,
+    "auto": FAN_AUTO,
+}
+
+HA_FAN_TO_CM = {value: key for key, value in CM_TO_HA_FAN.items()}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,14 +47,18 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: CoolmasterConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the CoolMasterNet climate platform."""
     coordinator = config_entry.runtime_data
     supported_modes: list[str] = config_entry.data[CONF_SUPPORTED_MODES]
+    fan_modes: list[str] = config_entry.data.get(CONF_FAN_MODES, DEFAULT_FAN_MODES)
     async_add_entities(
         CoolmasterClimate(
-            coordinator, unit_id, [HVACMode(mode) for mode in supported_modes]
+            coordinator,
+            unit_id,
+            [HVACMode(mode) for mode in supported_modes],
+            fan_modes,
         )
         for unit_id in coordinator.data
     )
@@ -57,18 +69,26 @@ class CoolmasterClimate(CoolmasterEntity, ClimateEntity):
 
     _attr_name = None
 
+    # Holds unknown fan speeds we have already warned about.
+    warned_unknown_fan_speeds: set[str] = set()
+
     def __init__(
         self,
         coordinator: CoolmasterDataUpdateCoordinator,
         unit_id: str,
         supported_modes: list[HVACMode],
+        fan_modes: list[str] | None = None,
     ) -> None:
         """Initialize the climate device."""
         super().__init__(coordinator, unit_id)
         self._attr_hvac_modes = supported_modes
+        self._fan_modes = list(
+            fan_modes if fan_modes is not None else DEFAULT_FAN_MODES
+        )
         self._attr_unique_id = unit_id
 
     @property
+    @override
     def supported_features(self) -> ClimateEntityFeature:
         """Return the list of supported features."""
         supported_features = (
@@ -82,6 +102,7 @@ class CoolmasterClimate(CoolmasterEntity, ClimateEntity):
         return supported_features
 
     @property
+    @override
     def temperature_unit(self) -> str:
         """Return the unit of measurement."""
         if self._unit.temperature_unit == "celsius":
@@ -90,17 +111,20 @@ class CoolmasterClimate(CoolmasterEntity, ClimateEntity):
         return UnitOfTemperature.FAHRENHEIT
 
     @property
-    def current_temperature(self):
+    @override
+    def current_temperature(self) -> float:
         """Return the current temperature."""
         return self._unit.temperature
 
     @property
-    def target_temperature(self):
+    @override
+    def target_temperature(self) -> float:
         """Return the temperature we are trying to reach."""
         return self._unit.thermostat
 
     @property
-    def hvac_mode(self):
+    @override
+    def hvac_mode(self) -> HVACMode:
         """Return hvac target hvac state."""
         mode = self._unit.mode
         if not self._unit.is_on:
@@ -109,25 +133,42 @@ class CoolmasterClimate(CoolmasterEntity, ClimateEntity):
         return CM_TO_HA_STATE[mode]
 
     @property
-    def fan_mode(self):
+    @override
+    def fan_mode(self) -> str:
         """Return the fan setting."""
-        return self._unit.fan_speed
+
+        # Normalize to lowercase for lookup, and pass unknown lowercase values through.
+        fan_speed_lower = self._unit.fan_speed.lower()
+        if fan_speed_lower not in CM_TO_HA_FAN:
+            if fan_speed_lower not in CoolmasterClimate.warned_unknown_fan_speeds:
+                CoolmasterClimate.warned_unknown_fan_speeds.add(fan_speed_lower)
+                _LOGGER.warning(
+                    "Detected unknown fan speed value from HVAC unit: %s",
+                    fan_speed_lower,
+                )
+            return fan_speed_lower
+
+        return CM_TO_HA_FAN[fan_speed_lower]
 
     @property
-    def fan_modes(self):
+    @override
+    def fan_modes(self) -> list[str]:
         """Return the list of available fan modes."""
-        return FAN_MODES
+        return self._fan_modes
 
     @property
+    @override
     def swing_mode(self) -> str | None:
         """Return the swing mode setting."""
         return self._unit.swing
 
     @property
+    @override
     def swing_modes(self) -> list[str] | None:
         """Return swing modes if supported."""
         return SWING_MODES if self.swing_mode is not None else None
 
+    @override
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperatures."""
         if (temp := kwargs.get(ATTR_TEMPERATURE)) is not None:
@@ -135,12 +176,14 @@ class CoolmasterClimate(CoolmasterEntity, ClimateEntity):
             self._unit = await self._unit.set_thermostat(temp)
             self.async_write_ha_state()
 
+    @override
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new fan mode."""
         _LOGGER.debug("Setting fan mode of %s to %s", self.unique_id, fan_mode)
-        self._unit = await self._unit.set_fan_speed(fan_mode)
+        self._unit = await self._unit.set_fan_speed(HA_FAN_TO_CM[fan_mode])
         self.async_write_ha_state()
 
+    @override
     async def async_set_swing_mode(self, swing_mode: str) -> None:
         """Set new swing mode."""
         _LOGGER.debug("Setting swing mode of %s to %s", self.unique_id, swing_mode)
@@ -150,6 +193,7 @@ class CoolmasterClimate(CoolmasterEntity, ClimateEntity):
             raise HomeAssistantError(error) from error
         self.async_write_ha_state()
 
+    @override
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set new operation mode."""
         _LOGGER.debug("Setting operation mode of %s to %s", self.unique_id, hvac_mode)
@@ -160,12 +204,14 @@ class CoolmasterClimate(CoolmasterEntity, ClimateEntity):
             self._unit = await self._unit.set_mode(HA_STATE_TO_CM[hvac_mode])
             await self.async_turn_on()
 
+    @override
     async def async_turn_on(self) -> None:
         """Turn on."""
         _LOGGER.debug("Turning %s on", self.unique_id)
         self._unit = await self._unit.turn_on()
         self.async_write_ha_state()
 
+    @override
     async def async_turn_off(self) -> None:
         """Turn off."""
         _LOGGER.debug("Turning %s off", self.unique_id)
