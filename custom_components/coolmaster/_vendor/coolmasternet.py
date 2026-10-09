@@ -176,11 +176,12 @@ class CoolMasterNet:
 class CoolMasterNetUnit:
     """An immutable snapshot of a unit."""
 
-    def __init__(self, bridge, unit_id, raw, swing_raw, status_cmd="ls2"):
+    def __init__(self, bridge, unit_id, raw, swing_raw, status_cmd="ls2", lock_raw=""):
         """Initialize a unit snapshot."""
         self._raw = raw
         self._status_cmd = status_cmd
         self._swing_raw = swing_raw
+        self._lock_raw = lock_raw
         self._unit_id = unit_id
         self._bridge = bridge
         self._parse()
@@ -192,12 +193,24 @@ class CoolMasterNetUnit:
             if not status_lines:
                 raise CoolMasterNetConnectionError(f"Unit {unit_id} returned no status")
             raw = status_lines[0]
-        swing_raw = (
-            (await bridge._make_request(f"query {unit_id} s")).strip()
+
+        async def read_locks():
+            try:
+                return (await bridge._make_request(f"lock {unit_id}")).strip()
+            except CoolMasterNetCommandError:
+                # Older bridges may not support lock queries. Do not invent a
+                # state from the last command sent by Home Assistant.
+                return ""
+
+        swing_raw, lock_raw = await asyncio.gather(
+            bridge._make_request(f"query {unit_id} s")
             if bridge._swing_support
-            else ""
+            else asyncio.sleep(0, result=""),
+            read_locks(),
         )
-        return cls(bridge, unit_id, raw, swing_raw, status_cmd), unit_id
+        return cls(
+            bridge, unit_id, raw, swing_raw.strip(), status_cmd, lock_raw
+        ), unit_id
 
     def _parse(self):
         fields = re.split(r"\s+", self._raw.strip())
@@ -225,6 +238,23 @@ class CoolMasterNetUnit:
         # is unknown there rather than assumed to be off.
         self._demand = fields[8] != "0" if len(fields) > 8 else None
         self._swing = _SWING_CHAR_TO_NAME.get(self._swing_raw)
+        self._locks = self._parse_locks(self._lock_raw)
+
+    @staticmethod
+    def _parse_locks(raw):
+        """Parse the documented lock query response, never guess missing flags."""
+        flags = {"o": None, "m": None, "t": None}
+        tokens = raw.split()
+        if tokens == ["+"] or tokens == ["-"]:
+            return dict.fromkeys(flags, tokens[0] == "+")
+        if not tokens or any(
+            not re.fullmatch(r"[+-][omtn]", token) for token in tokens
+        ):
+            return flags
+        for token in tokens:
+            if token[1] in flags:
+                flags[token[1]] = token[0] == "+"
+        return flags
 
     async def _make_unit_request(self, request):
         return await self._bridge._make_request(request.replace("UID", self._unit_id))
@@ -295,6 +325,10 @@ class CoolMasterNetUnit:
     @property
     def temperature_unit(self):
         return self._temperature_unit
+
+    def lock_state(self, flag):
+        """Return a confirmed lock state, or None when the bridge did not report it."""
+        return self._locks[flag]
 
     async def set_fan_speed(self, value):
         """Set the fan speed."""

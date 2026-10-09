@@ -81,24 +81,17 @@
     "button": {
       "reset_filter": {
         "name": "Reset filter"
-      },
+      }
+    },
+    "switch": {
       "lock_on": {
-        "name": "Enable on/off lock"
-      },
-      "unlock_on": {
-        "name": "Disable on/off lock"
+        "name": "On/off lock"
       },
       "lock_temp": {
-        "name": "Enable temperature lock"
-      },
-      "unlock_temp": {
-        "name": "Disable temperature lock"
+        "name": "Temperature lock"
       },
       "lock_mode": {
-        "name": "Enable mode lock"
-      },
-      "unlock_mode": {
-        "name": "Disable mode lock"
+        "name": "Mode lock"
       }
     },
     "sensor": {

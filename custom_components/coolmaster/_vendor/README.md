@@ -8,6 +8,8 @@ Extensiones CFM originales: [carferrer/pycoolmasternet-async-cfm, 82ba99c](https
 Adaptaciones locales:
 
 - Seis métodos de bloqueo originales, con implementación común y una lectura de la unidad.
+- Consulta `lock <UID>` y análisis de los bloqueos de encendido, modo y consigna;
+  si la respuesta no los indica, el estado permanece desconocido.
 - Tiempo máximo para abrir la conexión, vaciado de escritura y errores claros ante EOF.
 - Lecturas vacías como ausencia de unidades; validación de información y temperaturas.
 - Coma decimal también en la consigna y conservación de identificadores largos.

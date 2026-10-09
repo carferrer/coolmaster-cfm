@@ -15,10 +15,25 @@ STATUS = "L1.001 ON 23.0C 24.0C Med Cool OK - 1"
 
 
 class UnitTests(unittest.IsolatedAsyncioTestCase):
-    def unit(self, raw=STATUS):
+    def unit(self, raw=STATUS, lock_raw=""):
         bridge = CoolMasterNet("unused")
         bridge._make_request = AsyncMock(return_value="")
-        return CoolMasterNetUnit(bridge, "L1.001", raw, "", "ls2")
+        return CoolMasterNetUnit(bridge, "L1.001", raw, "", "ls2", lock_raw)
+
+    def test_lock_query_formats(self):
+        for raw, expected in [
+            ("-o -m -t +n", (False, False, False)),
+            ("+o -m +t -n", (True, False, True)),
+            ("+", (True, True, True)),
+            ("-", (False, False, False)),
+            ("Bad Function", (None, None, None)),
+            ("+o -m", (True, False, None)),
+        ]:
+            with self.subTest(raw=raw):
+                unit = self.unit(lock_raw=raw)
+                self.assertEqual(
+                    tuple(unit.lock_state(flag) for flag in "omt"), expected
+                )
 
     def test_demand_and_legacy_status(self):
         for flag, expected in [("0", False), ("1", True), ("2", True)]:
@@ -66,15 +81,44 @@ class UnitTests(unittest.IsolatedAsyncioTestCase):
         bridge = CoolMasterNet("unused")
         raw = "L12.1234 ON 23.0C 24.0C Med Cool OK -"
         bridge._make_request = AsyncMock(
-            side_effect=[CoolMasterNetCommandError(), raw, raw]
+            side_effect=[CoolMasterNetCommandError(), raw, "-o -m -t", raw, "-o -m -t"]
         )
         unit = (await bridge.status())["L12.1234"]
         self.assertIsNone(unit.demand)
         await unit.refresh()
         self.assertEqual(
             [c.args[0] for c in bridge._make_request.await_args_list],
-            ["ls2", "stat2", "stat2 L12.1234"],
+            ["ls2", "stat2", "lock L12.1234", "stat2 L12.1234", "lock L12.1234"],
         )
+
+    async def test_status_reads_external_lock_state(self):
+        bridge = CoolMasterNet("unused")
+
+        async def response(command):
+            return STATUS if command == "ls2" else "+o -m +t +n"
+
+        bridge._make_request = AsyncMock(side_effect=response)
+        unit = (await bridge.status())["L1.001"]
+        self.assertTrue(unit.lock_state("o"))
+        self.assertFalse(unit.lock_state("m"))
+        self.assertTrue(unit.lock_state("t"))
+        self.assertEqual(
+            [c.args[0] for c in bridge._make_request.await_args_list],
+            ["ls2", "lock L1.001"],
+        )
+
+    async def test_unsupported_lock_query_keeps_hvac_status(self):
+        bridge = CoolMasterNet("unused")
+
+        async def response(command):
+            if command == "ls2":
+                return STATUS
+            raise CoolMasterNetCommandError("unsupported")
+
+        bridge._make_request = AsyncMock(side_effect=response)
+        unit = (await bridge.status())["L1.001"]
+        self.assertIsNone(unit.lock_state("o"))
+        self.assertTrue(unit.is_on)
 
     async def test_empty_single_unit_refresh(self):
         unit = self.unit()

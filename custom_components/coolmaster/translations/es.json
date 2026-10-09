@@ -81,24 +81,17 @@
     "button": {
       "reset_filter": {
         "name": "Reiniciar filtro"
-      },
+      }
+    },
+    "switch": {
       "lock_on": {
-        "name": "Bloqueo on/off activar"
-      },
-      "unlock_on": {
-        "name": "Bloqueo on/off desactivar"
+        "name": "Bloqueo de encendido y apagado"
       },
       "lock_temp": {
-        "name": "Bloqueo temp. activar"
-      },
-      "unlock_temp": {
-        "name": "Bloqueo temp. desactivar"
+        "name": "Bloqueo de temperatura"
       },
       "lock_mode": {
-        "name": "Bloqueo modo activar"
-      },
-      "unlock_mode": {
-        "name": "Bloqueo modo desactivar"
+        "name": "Bloqueo de modo"
       }
     },
     "sensor": {

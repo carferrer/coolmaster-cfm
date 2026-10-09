@@ -1,8 +1,8 @@
 # CoolMasterNet CFM
 
 Integración personalizada para **Home Assistant 2026.9.2 o posterior**. Conserva
-la demanda VRV y los seis botones de bloqueo de la versión CFM 1.0.5.
-La versión 1.1.1 se basa en la integración oficial de HA 2026.9.2, con la
+la demanda VRV y permite consultar y controlar los bloqueos del mando local.
+La versión 1.2.0 se basa en la integración oficial de HA 2026.9.2, con la
 biblioteca de protocolo actualizada desde `pycoolmasternet-async` v0.2.6.
 
 ## Actualizar desde 1.0.5
@@ -11,13 +11,15 @@ biblioteca de protocolo actualizada desde `pycoolmasternet-async` v0.2.6.
 2. Sustituye esa carpeta por `custom_components/coolmaster` de esta versión,
    incluyendo `translations` y `manifest.json`.
 3. Reinicia Home Assistant.
-4. Comprueba demanda, filtro, climatización y los botones con una unidad.
+4. Comprueba demanda, filtro, climatización y los interruptores de bloqueo con una unidad.
 
 No borres ni vuelvas a crear la integración: se mantienen el dominio `coolmaster`,
-la versión de configuración 1, los identificadores de dispositivos y los
-`unique_id` originales, incluidas las claves `lock_on`, `unlock_on`, `lock_temp`,
-`unlock_temp`, `lock_mode` y `unlock_mode`. Los nombres personalizados permanecen
-en el registro de entidades existente.
+la versión de configuración 1 y los identificadores de dispositivos. El botón
+de filtro mantiene su `unique_id`. Los seis botones de bloqueo se reemplazan por
+tres entidades `switch` (`lock_on`, `lock_temp`, `lock_mode`). Los botones antiguos
+pueden quedar como entradas huérfanas en el registro de entidades de Home
+Assistant; tras reiniciar, se pueden eliminar allí y actualizar las
+automatizaciones que los usaban.
 
 ## Máquinas Daikin con dos velocidades
 
@@ -49,13 +51,17 @@ Su procedencia y las adaptaciones están documentadas en `_vendor/README.md`.
 - Prevención de entradas duplicadas por host y opción de activación para modelos serie.
 - Tres intentos de lectura, con esperas de 2 y 4 segundos y sin espera tras el último fallo.
 - Demanda mediante la propiedad pública; estado desconocido si el formato no la incluye.
-- Siete botones implementados con descripciones; cada acción publica la lectura de su
-  unidad, sin una consulta adicional de todo el puente.
+- Un botón de filtro y tres interruptores de bloqueo por unidad. Cada interruptor
+  consulta `lock <UID>` en el puente y muestra su respuesta real, también cuando
+  el bloqueo se cambia fuera de Home Assistant. Tras una orden, vuelve a leer
+  esa unidad sin consultar el puente completo.
 - Unidades ausentes pasan a no disponibles y pueden eliminarse del registro.
 - Traducciones independientes en español e inglés, sin claves JSON duplicadas.
 
-Los botones envían órdenes; no representan ni verifican el estado actual del bloqueo.
-Se mantiene ese comportamiento hasta disponer de una lectura confirmada del equipo.
+La consulta de bloqueos añade una petición por unidad en cada actualización.
+Si un puente no admite `lock <UID>` o no informa de un bloqueo concreto, su
+interruptor aparece como **no disponible** en lugar de asumir que está desactivado.
+El protocolo está documentado en el [manual de CoolAutomation](https://support.coolautomation.com/hc/en-us/articles/7068465434397-CoolMaster-PRM-Programmers-Reference-Manual).
 
 ## Pruebas de desarrollo
 
