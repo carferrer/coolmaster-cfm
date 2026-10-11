@@ -1,8 +1,8 @@
 # CoolMasterNet CFM
 
-Integración personalizada para **Home Assistant 2026.9.2 o posterior**. Conserva
+Integración personalizada para **Home Assistant 2026.9.1 o posterior**. Conserva
 la demanda VRV y permite consultar y controlar los bloqueos del mando local.
-La versión 1.2.0 se basa en la integración oficial de HA 2026.9.2, con la
+El código se basa en la integración oficial de HA 2026.9.2, con la
 biblioteca de protocolo actualizada desde `pycoolmasternet-async` v0.2.6.
 
 ## Actualizar desde 1.0.5
@@ -74,14 +74,16 @@ ruff check .
 ruff format --check .
 ```
 
-Las pruebas usan las clases reales de Home Assistant 2026.9.2 con comunicación
-simulada. La biblioteca tiene pruebas de protocolo con un servidor TCP local.
+Las pruebas usan las clases reales de la versión de Home Assistant fijada en
+`requirements-test.txt`, con comunicación simulada. También se verificó la
+compatibilidad con 2026.9.1. La biblioteca tiene pruebas de protocolo con un
+servidor TCP local.
 La validación con un puente físico y una instalación completa de HA queda pendiente.
 
 ## Verificaciones y releases
 
-En cada push y pull request se ejecutan las pruebas con Home Assistant 2026.9.2,
-Ruff, Hassfest y la validación de HACS. Hassfest y HACS también se ejecutan cada
+En cada push y pull request se ejecutan las pruebas con la versión de Home
+Assistant fijada en `requirements-test.txt`, Ruff, Hassfest y la validación de HACS. Hassfest y HACS también se ejecutan cada
 día. Al publicar una release, GitHub Actions adjunta `coolmaster.zip` con el
 contenido de `custom_components/coolmaster` en la raíz del ZIP. HACS utiliza
 ese archivo para instalar la integración; no es necesario empaquetarlo a mano.
